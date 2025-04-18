@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,42 @@ const ReportBuilder = () => {
     recommendation: ""
   });
   const [copied, setCopied] = useState(false);
+
+  // Load scan results from sessionStorage if available
+  useEffect(() => {
+    const scanResultsJson = sessionStorage.getItem('scanResults');
+    if (scanResultsJson) {
+      try {
+        const scanResults = JSON.parse(scanResultsJson);
+        
+        // If there are vulnerabilities, use the first one to pre-fill the form
+        if (scanResults.vulnerabilities && scanResults.vulnerabilities.length > 0) {
+          const vuln = scanResults.vulnerabilities[0];
+          
+          setFormData({
+            title: `${vuln.type} vulnerability found in ${scanResults.url}`,
+            targetUrl: scanResults.url,
+            vulnerability: vuln.type.toLowerCase(),
+            severity: vuln.severity,
+            description: vuln.description,
+            stepsToReproduce: "1. Navigate to the affected page\n2. Observe the vulnerability",
+            impact: "This vulnerability could potentially lead to unauthorized access or data exposure.",
+            recommendation: vuln.recommendation
+          });
+          
+          // Clear the sessionStorage after using it
+          sessionStorage.removeItem('scanResults');
+          
+          toast({
+            title: "Report Pre-filled",
+            description: "Scan results have been loaded into the report builder."
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing scan results:", error);
+      }
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
